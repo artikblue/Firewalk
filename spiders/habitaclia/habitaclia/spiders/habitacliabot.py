@@ -72,15 +72,18 @@ class HabitacliabotSpider(scrapy.Spider):
             price = price_content[0]
             price = price.replace(".","")
             price =  re.findall(r'\d+', price)[0]
+            price = int(price)
         except:
             price = 0
         try:
             rooms = distrib_content[0][:2]
+            rooms = int(rooms)
         except:
             rooms = 0
         try:
             surface = distrib_content[1]
             surface =  re.findall(r'\d+', surface)[0]
+            surface = int(surface)
         except:
             surface = 0
         selector_images = '//div[@class="flex-images"]/div/@url'
