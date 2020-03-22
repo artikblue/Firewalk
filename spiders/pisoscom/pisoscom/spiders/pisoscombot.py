@@ -2,6 +2,8 @@
 import scrapy
 import re
 import os
+import datetime
+
 # scrapy crawl pisoscombot -a "urls=https://www.pisos.com/alquiler/pisos-madrid_sur/"
 
 class PisoscombotSpider(scrapy.Spider):
@@ -55,6 +57,17 @@ class PisoscombotSpider(scrapy.Spider):
         selector_basicatribs = '//li[@class="charblock-element element-with-bullet"]/span/text()'
         basicatribs_content = response.xpath(selector_basicatribs).extract()
 
+        selector_company = '//div[@class="owner-data-info"]/a/text()'
+        company_content = response.xpath(selector_company).extract()
+
+        selector_feats = '//li[@class="charblock-element element-with-bullet"]/span/text()'
+        feats_content = response.xpath(selector_feats).extract()
+
+        try:
+            company = company_content[0]
+        except:
+            company = "unknown"
+
         try:
             gallery_content = gallery_content[0].replace('!','').split(',')
         except:
@@ -83,7 +96,27 @@ class PisoscombotSpider(scrapy.Spider):
             rooms = int(rooms)
         except:
             rooms = 0
+        try:
+            toilets = re.findall(r'\d+', basicinfo_content[2])[0]
+            toilets = int(toilets)
+        except:
+            toilets = 0
+        
+        
         url = response.url
+        parse_date = str(datetime.datetime.now())
+        #debug info:
+        print(url)
+        print(name)
+        print(price)
+        print(space)
+        print(address)
+        print(rooms)
+        print(company)
+        print(parse_date)
+        print(feats_content)
+
+        
 
         offer_object = {
             "name":name,
@@ -92,18 +125,16 @@ class PisoscombotSpider(scrapy.Spider):
             "address":address,
             "rooms":rooms,
             "url":url,
-            "gallery":gallery_content
+            "gallery":gallery_content,
+            "company":company,
+            "feats":feats_content,
+            "toilets":toilets,
+            "parse_date":parse_date
         }
 
         yield offer_object
 
         
-        #debug info:
-        print(url)
-        print(name)
-        print(price)
-        print(space)
-        print(address)
-        print(rooms)
+        
         
         

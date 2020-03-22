@@ -2,6 +2,7 @@
 import scrapy
 import re
 import os
+import datetime
 import time
 class IdealistabotSpider(scrapy.Spider):
     name = 'idealista'
@@ -34,6 +35,16 @@ class IdealistabotSpider(scrapy.Spider):
 
         yield scrapy.Request(url = next_pag[0])
 
+    def get_toilets(self, feats):
+        toilet = 0
+        for f in feats:
+
+            if "baño" in f:
+                toilet = int(f[0])
+                break
+        return toilet
+
+
     def parse_item(self, response):
         selector_name = '//span[@class="main-info__title-main"]/text()'
         name_content = response.xpath(selector_name).extract()
@@ -55,6 +66,9 @@ class IdealistabotSpider(scrapy.Spider):
         
         selector_company = '//div[@class="professional-name"]/span/text()'
         company_content = response.xpath(selector_company).extract()
+
+        selector_features = '//div[@class="details-property_features"]/ul/li/text()'
+        selector_content = response.xpath(selector_features).extract()
 
         text = response.text
 
@@ -95,16 +109,20 @@ class IdealistabotSpider(scrapy.Spider):
         except:
             company = ""
         url = response.url
-
+        parse_date = str(datetime.datetime.now())
+        toilets  = self.get_toilets(features_content)
         offer_object = {
             "url":url,
             "company":company,
+            "toilets":toilets,
             "rooms":rooms,
             "price":price,
             "space":space,
             "name":name,
             "address":address,
-            "gallery":image_list
+            "gallery":image_list,
+            "features":features_content,
+            "parse_date":parse_date
         }
 
         yield offer_object

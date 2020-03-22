@@ -3,6 +3,7 @@ import scrapy
 import requests
 import re
 import os
+import datetime
 
 class HabitacliabotSpider(scrapy.Spider):
     name = 'habitacliabot'
@@ -59,6 +60,14 @@ class HabitacliabotSpider(scrapy.Spider):
 
         selector_distrib = '//article[@class="has-aside"]/ul/li/text()'
         distrib_content = response.xpath(selector_distrib).extract()
+        # js-contact-top
+        selector_company = '//aside[@id="js-contact-top"]/div[@class="data"]/span/text()'
+        company_content = response.xpath(selector_company).extract()
+
+        try:
+            company = company_content[0]
+        except:
+            company = "unknown"
         
         try:
             address = address_content[1].strip()
@@ -86,6 +95,13 @@ class HabitacliabotSpider(scrapy.Spider):
             surface = int(surface)
         except:
             surface = 0
+        try:
+            toilets = distrib_content[2]
+            toilets =  re.findall(r'\d+', toilets)[0]
+            toilets = int(toilets)
+        except:
+            toilets = 0
+
         selector_images = '//div[@class="flex-images"]/div/@url'
         images_content = response.xpath(selector_images).extract()
         url = response.url
@@ -95,15 +111,24 @@ class HabitacliabotSpider(scrapy.Spider):
         print(price)
         print(rooms)
         print(surface)
+        print(company)
+        print(toilets)
+        print(distrib_content)
 
+        parse_date = str(datetime.datetime.now())
+        print(parse_date)
         offer_object = {
             "url":url,
             "name":name,
             "address":address,
+            "toilets":toilets,
             "price":price,
             "rooms":rooms,
             "surface":surface,
-            "images":images_content
+            "images":images_content,
+            "company":company_content,
+            "feats":distrib_content,
+            "parse_date":parse_date
         }
 
         yield offer_object
