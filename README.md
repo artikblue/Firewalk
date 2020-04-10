@@ -5,3 +5,7 @@ Firewalk is a tool that can be used for retrieving and analyzing data related to
 ### Status
 This project is under development.
 
+
+### About the nature of this project
+
+To make it clear, this project is part of my final thesis in Visual Analytics and Big data MSC at UNIR, course 2020.
