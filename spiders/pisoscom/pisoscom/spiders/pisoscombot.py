@@ -42,6 +42,9 @@ class PisoscombotSpider(scrapy.Spider):
         selector_name = '//div[@class="maindata-info"]/h1/text()'
         name_content = response.xpath(selector_name).extract()
 
+        selector_zone = '//div[@class="maindata-info"]/h2/text()'
+        zone_content = response.xpath(selector_zone).extract()
+
         selector_address = '//h2[@class="position"]/text()'
         address_content = response.xpath(selector_address).extract()
 
@@ -63,6 +66,11 @@ class PisoscombotSpider(scrapy.Spider):
         selector_feats = '//li[@class="charblock-element element-with-bullet"]/span/text()'
         feats_content = response.xpath(selector_feats).extract()
 
+
+        try:
+            zone = zone_content[0]
+        except:
+            zone = "unknown"
         try:
             company = company_content[0]
         except:
@@ -77,9 +85,12 @@ class PisoscombotSpider(scrapy.Spider):
         except:
             name = ""
         try:
-            price =  re.findall(r'\d+', price_content[0])[0]
-            price = price.replace('.','')
+
+            price = price_content[0]
+            price = price.replace(".","")
+            price =  re.findall(r'\d+', price)[0]
             price = int(price)
+
         except:
             price = 0
         try:
@@ -119,19 +130,41 @@ class PisoscombotSpider(scrapy.Spider):
         
 
         offer_object = {
+            "site":"pisoscom",
+            "city":"Madrid",
+            "zone":zone,
             "name":name,
             "price":price,
-            "space":space,
+            "surface":space,
             "address":address,
             "rooms":rooms,
             "url":url,
-            "gallery":gallery_content,
+            "images":gallery_content,
             "company":company,
             "feats":feats_content,
             "toilets":toilets,
             "parse_date":parse_date
         }
 
+
+        """
+offer_object = {
+            "site":"habitaclia",
+            "city":"Madrid",
+            "zone":zone,
+            "url":url,
+            "name":name,
+            "address":address,
+            "toilets":toilets,
+            "price":price,
+            "rooms":rooms,
+            "surface":surface,
+            "images":images_content,
+            "company":company,
+            "feats":distrib_content,
+            "parse_date":parse_date
+        }
+        """
         yield offer_object
 
         

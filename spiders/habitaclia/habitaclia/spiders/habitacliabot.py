@@ -23,24 +23,41 @@ class HabitacliabotSpider(scrapy.Spider):
         selector = '//ul[@class="verticalul"]/li/a/@href'
         url_content = response.xpath(selector).extract()
         print(url_content)
+        headers = {
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-Mode': 'navigate',
+            'Accept-Encoding': 'gzip, deflate, br'
+        }
 
         selector_zona = '//div[@class="ver-todo-zona"]/a/@href'
         zona_content = response.xpath(selector_zona).extract()
 
         if zona_content:
-            yield scrapy.Request(url = zona_content[0], callback = self.parse_page)
+            yield scrapy.Request(url = zona_content[0], headers=headers, callback = self.parse_page)
         else:
             for u in url_content:
-                yield scrapy.Request(url = u, callback = self.parse)
+                yield scrapy.Request(url = u, headers=headers, callback = self.parse)
 
     def parse_page(self, response):
         print(response)
 
         selector_offer = '//h3[@class="list-item-title"]/a/@href'
         offer_content = response.xpath(selector_offer).extract()
-
+        headers = {
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-Mode': 'navigate',
+            'Accept-Encoding': 'gzip, deflate, br'
+        }
         for u in offer_content:
-            yield scrapy.Request(url = u, callback = self.parse_offer)
+            yield scrapy.Request(url = u, headers=headers,callback = self.parse_offer)
 
         selector_next = '//li[@class="next"]/a/@href'
         next_content = response.xpath(selector_next).extract()
@@ -49,6 +66,10 @@ class HabitacliabotSpider(scrapy.Spider):
             yield scrapy.Request(url = next_content[0], callback = self.parse_page)
 
     def parse_offer(self, response):
+
+        selector_zone = "//a[@id='js-ver-mapa-zona']/text()"
+        zone_content = response.xpath(selector_zone).extract()
+
         selector_name = '//div[@class="summary-left"]/h1/text()'
         name_content = response.xpath(selector_name).extract()
 
@@ -63,6 +84,13 @@ class HabitacliabotSpider(scrapy.Spider):
         # js-contact-top
         selector_company = '//aside[@id="js-contact-top"]/div[@class="data"]/span/text()'
         company_content = response.xpath(selector_company).extract()
+
+        try:
+            zone = zone_content[0].strip()
+
+            zoone = zone.replace('.','')
+        except:
+            zone = "unknown"
 
         try:
             company = company_content[0]
@@ -118,6 +146,9 @@ class HabitacliabotSpider(scrapy.Spider):
         parse_date = str(datetime.datetime.now())
         print(parse_date)
         offer_object = {
+            "site":"habitaclia",
+            "city":"Madrid",
+            "zone":zone,
             "url":url,
             "name":name,
             "address":address,
@@ -126,7 +157,7 @@ class HabitacliabotSpider(scrapy.Spider):
             "rooms":rooms,
             "surface":surface,
             "images":images_content,
-            "company":company_content,
+            "company":company,
             "feats":distrib_content,
             "parse_date":parse_date
         }
