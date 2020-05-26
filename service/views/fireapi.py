@@ -156,7 +156,12 @@ async def sitescounterI():
 # LIST ALL DATA RELATED TO ONE OFFER, FILTER BY NAME
 @blueprint.route('/offerdetails/<o>', methods=['GET'])
 async def offerdetails(o: str):
-    return ""
+    i = str(o) # 5e7a7baeb3ebdb96a6f17fd7
+    query = offers.Offer.objects().distinct(_id=i)
+    print(query)
+    o = jsonify(query)
+
+    return o
 
 
 
