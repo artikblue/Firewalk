@@ -17,3 +17,4 @@ class Offer(Document):
     company = StringField(required=True)
     feats = ListField(required=True)
     parse_date = StringField(required=True)
+    geo_coords = StringField(required=False)

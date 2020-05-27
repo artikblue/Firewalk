@@ -6,7 +6,7 @@ import asyncio
 blueprint = quart.blueprints.Blueprint(__name__, __name__)
 
 
-from models import offers
+from models import offers, clusters, generalstats
 
 
 """
@@ -146,6 +146,8 @@ async def offerchart():
 # RETURN A LIST CATEGORY:COUNT (EXPENSIVE, CHEAP---) CATEGORY/UNITS
 @blueprint.route('/categories', methods=['GET'])
 async def categories():
+
+
     return ""
 
 # RETURN A LIST SITE:COUNT (SITE, NUMBER---) CATEGORY/UNITS
@@ -170,17 +172,63 @@ async def offerdetails(o: str):
 # GET ALL CLUSTER DATA
 @blueprint.route('/getclusters', methods=['GET'])
 async def getclusters():
-    return ""
+    query = clusters.Cluster.objects()
+    o = query.to_json()
+    return jsonify(o)
 
 # RUN CLUSTER ANALYSIS WHERE N I S THE NUMBER OF CLUSTER -> RESULT GOES TO RRESULTS DB
 @blueprint.route('/runcluster/<n>', methods=['GET'])
 async def runcluster(n: int):
-    return ""
+    query = offers.Offer.objects.all().limit(1000)
+    o = query.to_json()
+    a = await fireservice.make_clusters(o, int(n))
+    for v in a:
+        clusters.Cluster(price=v["price"], surface=v["surface"], rooms=v["rooms"], toilets=v["toilets"], feats=v["feats"], images=v["images"]).save()
+        
+    return jsonify(a)
 
 # GET GENERAL STATS
 @blueprint.route('/generalstats', methods=['GET'])
-async def generalstats():
-    return ""
+async def getgeneralstats():
+    query = offers.Offer.objects().limit(1000)
+    o = query.to_json()
+    v = await fireservice.make_stats(o)
+
+    generalstats.Stats(
+            price_mean = v["price_mean"],
+            surface_mean = v["surface_mean"],
+            rooms_mean = v["rooms_mean"],
+            toilets_mean = v["toilets_mean"],
+            feats_mean = v["feats_mean"],
+            images_mean = v["images_mean"],
+            price_max = v["price_max"],
+            surface_max = v["surface_max"],
+            rooms_max = v["rooms_max"],
+            toilets_max = v["toilets_max"],
+            feats_max = v["feats_max"],
+            images_max = v["images_max"],
+            price_min = v["price_min"],
+            surface_min = v["surface_min"],
+            rooms_min = v["rooms_min"],
+            toilets_min = v["toilets_min"],
+            feats_min = v["feats_min"],
+            images_min = v["images_min"],
+            price_sum = v["price_sum"],
+            surface_sum = v["surface_sum"],
+            rooms_sum = v["rooms_sum"],
+            toilets_sum = v["toilets_sum"],
+            feats_sum = v["feats_sum"],
+            images_sum = v["images_sum"],
+            price_std = v["price_std"],
+            surface_std = v["surface_std"],
+            rooms_std = v["rooms_std"],
+            toilets_std = v["toilets_std"],
+            feats_std = v["feats_std"],
+            images_std = v["images_std"],
+            offers_count = v["offers_count"],
+            calc_date = v["calc_date"]
+    ).save()
+    return jsonify(v)
 
 # GET GEO POINTS RETURNS -> NAME, GEOCOORDS, ROOMS, SURFACE, TOILETS, PRICE, URL | {CITY, NUMBER OF REGISTERS}}
 @blueprint.route('/getgeopoints/', methods=['POST'])
@@ -253,10 +301,3 @@ async def flats():
     return jsonify(o)
 
 
-# example of a s y n c function
-
-@blueprint.route('/pi/<n>', methods=['GET'])
-async def pi(n: str):
-    pi = await fireservice.compute_pi(int(n))
-
-    return quart.jsonify( {'dec':n,'pi':pi})
