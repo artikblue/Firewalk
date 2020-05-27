@@ -146,11 +146,6 @@ async def offerchart(cat :str):
     return jsonify(v)
 
 
-# RETURN A LIST CATEGORY:COUNT (EXPENSIVE, CHEAP---) CATEGORY/UNITS
-@blueprint.route('/categories', methods=['GET'])
-async def categories():
-    return ""
-
 # RETURN A LIST SITE:COUNT (SITE, NUMBER---) CATEGORY/UNITS
 @blueprint.route('/sitescount', methods=['GET'])
 async def sitescounterI():
@@ -277,7 +272,10 @@ async def getreg():
 # RUN REGRESSION ANALYSIS
 @blueprint.route('/runreg', methods=['GET'])
 async def runreg():
-    return ""
+    query = offers.Offer.objects().limit(1000)
+    o = query.to_json()
+    v = await fireservice.make_regression(o)
+    return jsonify(v)
 ## BOTS MANAGEMENT
 
 # LIST ALL BOTS

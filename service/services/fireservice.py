@@ -4,12 +4,14 @@ import aiohttp
 import functools
 import json
 import datetime
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from pandas import DataFrame, DatetimeIndex
 from sklearn import preprocessing
 from sklearn.cluster import KMeans
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import KFold
 
-api = "https://swapi.co/api/"
 
 
 def force_async(fn):
@@ -43,6 +45,30 @@ def get_numerical_data(d):
 
     df = DataFrame(cluster_data)
     return df
+@force_async
+def make_regression(d):
+    df = get_numerical_data(d)
+    model = LinearRegression()
+    X = DataFrame(df["price"])
+    y = DataFrame(df[["surface", "rooms", "toilets", "feats", "images"]])
+    scores = []
+    kfold = KFold(n_splits=3, shuffle=True, random_state=42)
+    for i, (train, test) in enumerate(kfold.split(X, y)):
+        model.fit(X.iloc[train,:], y.iloc[train,:])
+        score = model.score(X.iloc[test,:], y.iloc[test,:])
+        scores.append(score)
+
+    regression_obj = {
+        "coefs":model.coef_,
+        "rank":model.rank_,
+        "singular":model.singular_,
+        "intercept":model.intercept_,
+        "scores":scores
+    }    
+
+    return regression_obj
+
+    #print(scores)
 
 @force_async
 def make_clusters(d, numclusters=6):
