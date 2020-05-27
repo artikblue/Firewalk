@@ -5,7 +5,7 @@ import functools
 import json
 import datetime
 from concurrent.futures import ThreadPoolExecutor
-from pandas import DataFrame
+from pandas import DataFrame, DatetimeIndex
 from sklearn import preprocessing
 from sklearn.cluster import KMeans
 
@@ -65,6 +65,55 @@ def make_clusters(d, numclusters=6):
         list_categories.append(obj)
     return list_categories
 
+def make_zonemean(d, val):
+    dj = json.loads(d)
+    df = DataFrame(dj)
+    zone_priceman = (df.groupby('zone').mean())
+
+    return (zone_priceman[val].to_json())
+
+def make_catcount(d, val="site"):
+    dj = json.loads(d)
+    df = DataFrame(dj)
+
+    df['month'] = DatetimeIndex(df['parse_date']).month
+
+    print(df.head())
+    valcount = (df.groupby(val).size())
+    
+    return(valcount.to_json())
+
+def make_timecount(d, val="month"):
+    dj = json.loads(d)
+    df = DataFrame(dj)
+
+    if val == "month":
+        df['month'] = DatetimeIndex(df['parse_date']).month
+        valcount = (df.groupby("month").size())
+    
+    if val == "year":
+        df['year'] = DatetimeIndex(df['parse_date']).year
+        valcount = (df.groupby("year").size())
+
+    if val == "day":
+        df['day'] = DatetimeIndex(df['parse_date']).day
+        valcount = (df.groupby("day").size())
+    
+    return(valcount.to_json())    
+
+def make_cheap_zones(d):
+    dj = json.loads(d)
+    df = DataFrame(dj)
+    price_mean = df["price"].mean()
+    dfc = df[df.price < price_mean]
+    return dfc.to_json()
+
+def make_expensive_zones(d):
+    dj = json.loads(d)
+    df = DataFrame(dj)
+    price_mean = df["price"].mean()
+    dfc = df[df.price > price_mean]
+    return dfc.to_json()
 
 @force_async
 def make_stats(d):

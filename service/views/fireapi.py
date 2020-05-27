@@ -138,22 +138,26 @@ async def citiescount(c: str):
 
 
 # RETURN A LIST {MONTHS, COUNT} OFFERS/MONTH
-@blueprint.route('/offerchart', methods=['GET'])
-async def offerchart():
-    return ""
+@blueprint.route('/offerchart/<cat>', methods=['GET'])
+async def offerchart(cat :str):
+    query = offers.Offer.objects().limit(1000)
+    o = query.to_json()
+    v =  fireservice.make_timecount(o,"month")
+    return jsonify(v)
 
 
 # RETURN A LIST CATEGORY:COUNT (EXPENSIVE, CHEAP---) CATEGORY/UNITS
 @blueprint.route('/categories', methods=['GET'])
 async def categories():
-
-
     return ""
 
 # RETURN A LIST SITE:COUNT (SITE, NUMBER---) CATEGORY/UNITS
 @blueprint.route('/sitescount', methods=['GET'])
 async def sitescounterI():
-    return ""
+    query = offers.Offer.objects().limit(1000)
+    o = query.to_json()
+    v =  fireservice.make_catcount(o,"site")
+    return jsonify(v)
 
 # LIST ALL DATA RELATED TO ONE OFFER, FILTER BY NAME
 @blueprint.route('/offerdetails/<o>', methods=['GET'])
@@ -241,19 +245,28 @@ async def influencialatribs():
     return ""
 
 # GET LIST OF CHEAPEST ZONES N IS THE MAX NUMBER, RETURN ZONE , AVG PRICE
-@blueprint.route('/cheapestzones/<n>', methods=['GET'])
-async def cheapestzones(o: int):
-    return ""
+@blueprint.route('/cheapestzones', methods=['GET'])
+async def cheapestzones():
+    query = offers.Offer.objects().limit(1000)
+    o = query.to_json()
+    v =  fireservice.make_cheap_zones(o)
+    return jsonify(v)
 
 # GET LIST OF MOST EXPENSIVE ZONES N IS THE MAX NUMBER, RETURN ZONE , AVG PRICE
-@blueprint.route('/expensivestzones/<n>', methods=['GET'])
-async def expensivestzones(o: int):
-    return ""
+@blueprint.route('/expensivestzones', methods=['GET'])
+async def expensivestzones():
+    query = offers.Offer.objects().limit(1000)
+    o = query.to_json()
+    v =  fireservice.make_expensive_zones(o)
+    return jsonify(v)
 
 # GET LIST OF ZONES / AVERAGE PRICE
 @blueprint.route('/pricezone', methods=['GET'])
 async def avgzone():
-    return ""
+    query = offers.Offer.objects().limit(1000)
+    o = query.to_json()
+    v =  fireservice.make_zonemean(o,"price")
+    return jsonify(v)
 
 # GET REGRESSION DATA
 @blueprint.route('/getregression', methods=['GET'])
