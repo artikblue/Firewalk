@@ -9,26 +9,6 @@ blueprint = quart.blueprints.Blueprint(__name__, __name__)
 from models import offers, clusters, generalstats, regressions, classifiers
 
 
-"""
-@blueprint.route('/character/<n>', methods=['GET'])
-async def character(n: str):
-    character = await fireservice.characters(n)
-
-    return quart.jsonify(character)
-
-
-
-    Offer
-
-
-@blueprint.route('/flats/', methods=['GET'])
-async def flats():
-    query = offers.Offer.objects.all().limit(5)
-    o = query.to_json()
-    return jsonify(o)
-
-"""
-
 
 ## GENERAL DATA
 # CITIES
@@ -67,7 +47,7 @@ async def company(c: str):
 @blueprint.route('/sites/', methods=['GET'])
 async def sites():
     query = offers.Offer.objects().distinct(field="site")
-    print(query)
+
     o = jsonify(query)
     return o
 
@@ -87,7 +67,7 @@ async def search(s: str):
     reg = {"$regex": citty}
     query = offers.Offer.objects.filter(name=reg).first()
     if query:
-        print(query)
+
         o = query.to_json()
         return jsonify(o)
     else:
@@ -102,7 +82,7 @@ async def pricerange(s: str):
     query = offers.Offer.objects.filter(price >= min and price <= max).first()
 
     if query:
-        print(query)
+
         o = query.to_json()
         return jsonify(o)
     else:
@@ -117,7 +97,7 @@ async def surfacerange(s: str):
     query = offers.Offer.objects.filter(surface >= min and surface <= max).first()
 
     if query:
-        print(query)
+
         o = query.to_json()
         return jsonify(o)
     else:
@@ -160,9 +140,7 @@ async def offerdetails(o: str):
     i = str(o) # 5e7a7baeb3ebdb96a6f17fd7
     query = offers.Offer.objects().distinct(_id=i)
     print(query)
-    o = jsonify(query)
-
-    return o
+    return jsonify(query)
 
 
 
