@@ -10,7 +10,13 @@ from pandas import DataFrame, DatetimeIndex
 from sklearn import preprocessing
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import train_test_split 
+from sklearn import metrics 
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
+import pickle
 import googlemaps
 
 
@@ -47,7 +53,7 @@ def get_numerical_data(d):
 
     df = DataFrame(cluster_data)
     return df
-
+@force_async
 def make_geopoints(d):
     d = json.loads(d)
     gmaps = googlemaps.Client(key='XXX')
@@ -63,16 +69,68 @@ def make_geopoints(d):
             "address":val["address"],
             "price":val["price"],
             "space":val["surface"],
-            "rooms"val["rooms"]
+            "rooms":val["rooms"]
         }
         located_offers.append(geo_object)
-        
+
     return located_offers
 
+def map_pricelabel(data,labels):
+    price = int(data["price"])
+
+    for k in labels.keys():
+        minprice = int(k)
+        if price >= minprice:
+            if price <= int(labels[k]["maxval"]):
+                return(labels[k]["tag"])
+
+def encode_target(df, target_column, newcolumn):
+
+    df_mod = df.copy()
+    targets = df_mod[target_column].unique()
+    map_to_int = {name: n for n, name in enumerate(targets)}
+    df_mod[newcolumn] = df_mod[target_column].replace(map_to_int)
+
+    return (df_mod, targets)
 
 
 @force_async
-def make_regression(d):
+def make_dtree(d,c):
+    data = json.loads(d)
+    df = DataFrame(data)
+    
+    prices_category = make_categories(c)
+
+    df['price_label'] = df.apply (lambda row: map_pricelabel(row,prices_category), axis=1)
+    df['num_photos'] = df.apply (lambda row: len(row["images"]), axis=1)
+    df['num_feats'] = df.apply (lambda row: len(row["feats"]), axis=1)
+    df2, sites = encode_target(df, "site", "site_num")
+    df2, cities = encode_target(df2, "city", "city_num")
+    df2, zones = encode_target(df2, "zone", "zone_num")
+    df2, companies = encode_target(df2, "company", "company_num")
+    df2, labels = encode_target(df2, "price_label", "label_num")
+
+    df2=df2.drop(columns=['price','site','city','zone','company','address','url','name','parse_date','price_label','feats','images'])
+
+    y = df2["label_num"]
+    X = df2[["num_photos","num_feats","site_num","city_num","zone_num","company_num","surface","rooms","toilets"]]
+    dt = DecisionTreeClassifier(min_samples_split=20, random_state=99, criterion="gini", max_depth=4)
+    
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=1) # 60% training and 40% test
+    dt = dt.fit(X_train,y_train)
+    y_pred = dt.predict(X_test)
+    scores = cross_val_score(dt, X, y, cv=5)
+
+    sdt = pickle.dumps(dt)
+    tree_obj = {
+        'accuracy':metrics.accuracy_score(y_test, y_pred),
+        'crossvalscores':scores.tolist()
+    }
+    return tree_obj,sdt
+
+@force_async
+def make_regression(d):  
     df = get_numerical_data(d)
     model = LinearRegression()
     X = DataFrame(df["price"])
@@ -116,6 +174,50 @@ def make_clusters(d, numclusters=6):
         }
         list_categories.append(obj)
     return list_categories
+
+def make_categories(c):
+    clusters = json.loads(c)
+    prices = []
+    #extract prices
+    for c in clusters:
+        prices.append(c["price"])
+    
+    prices.sort()
+    prices_category = {}
+    midval = len(prices) / 2
+    
+    for count in range(0,len(prices)-1):
+        actualprice = prices[count]
+
+        if count == 0:
+            minval = 0
+            nv = prices[count+1]
+            maxval = (actualprice+nv) / 2
+
+        elif count == len(prices)-1:
+            maxval = 1000000
+            prev = prices[count-1]
+            minval = ((actualprice+prev) / 2 )+1
+        else:
+            nv = prices[count+1]
+            prev = prices[count-1]
+            maxval = (actualprice+nv) / 2
+            minval = ((actualprice+prev) / 2 )+1
+
+        if count > midval:
+            tag = "CHEAP-"+str(count)
+        else:
+            tag = "EXPENSIVE-"+str(count)
+
+
+        prices_category[minval] = {
+            "minval":minval,
+            "maxval":maxval,
+            "tag":tag,
+            "centroid":prices[count]
+        }
+        count = count +1
+    return prices_category
 
 def make_zonemean(d, val):
     dj = json.loads(d)

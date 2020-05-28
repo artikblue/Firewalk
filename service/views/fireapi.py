@@ -1,12 +1,12 @@
 import quart
 from quart import jsonify
-
+import pickle
 from services import fireservice
 import asyncio
 blueprint = quart.blueprints.Blueprint(__name__, __name__)
 
 
-from models import offers, clusters, generalstats, regressions
+from models import offers, clusters, generalstats, regressions, classifiers
 
 
 """
@@ -234,14 +234,31 @@ async def getgeneralstats():
 async def getgeopoints():
     query = offers.Offer.objects().limit(1000)
     o = query.to_json()
-    v = fireservice.make_geopoints(o)
+    v = await fireservice.make_geopoints(o)
     return jsonify(v)
 
-# GET LIST OF MOST INFLUENCIAL ATRIBUTES FOR PRICE
-@blueprint.route('/influencialfeats', methods=['GET'])
+# GENERATE, TRAIN AND EVALUATE A DECISSIONTREE CLASSIFIER FOR OFFERS
+@blueprint.route('/genclassifier', methods=['GET'])
 async def influencialatribs():
-    return ""
+    querygeneral = offers.Offer.objects().limit(1000)
+    queryclusters = clusters.Cluster.objects()
+    v, sdt = await fireservice.make_dtree(querygeneral.to_json(), queryclusters.to_json())
+    classifiers.Classifier(
+        classifier_type = "decissiontree",
+        object_data = sdt,
+        accuracy = v["accuracy"],
+        scores = v["crossvalscores"]
+    ).save()
 
+    return jsonify(v)
+
+# GET CATEGORIES FOR OFFERS
+@blueprint.route('/categories', methods=['GET'])
+async def getcategories():
+    queryclusters = clusters.Cluster.objects()
+    v = fireservice.make_categories(queryclusters.to_json())
+
+    return jsonify(v)
 # GET LIST OF CHEAPEST ZONES N IS THE MAX NUMBER, RETURN ZONE , AVG PRICE
 @blueprint.route('/cheapestzones', methods=['GET'])
 async def cheapestzones():
