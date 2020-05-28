@@ -11,6 +11,8 @@ from sklearn import preprocessing
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold
+import googlemaps
+
 
 
 
@@ -45,6 +47,30 @@ def get_numerical_data(d):
 
     df = DataFrame(cluster_data)
     return df
+
+def make_geopoints(d):
+    d = json.loads(d)
+    gmaps = googlemaps.Client(key='XXX')
+
+    located_offers = []
+    for val in d:
+        address=val["address"]
+        lat, lng = gmaps.address_to_latlng(address)
+
+        geo_object = {
+            "geo":[lat, lng],
+            "url":val["url"],
+            "address":val["address"],
+            "price":val["price"],
+            "space":val["surface"],
+            "rooms"val["rooms"]
+        }
+        located_offers.append(geo_object)
+        
+    return located_offers
+
+
+
 @force_async
 def make_regression(d):
     df = get_numerical_data(d)

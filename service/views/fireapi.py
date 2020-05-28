@@ -6,7 +6,7 @@ import asyncio
 blueprint = quart.blueprints.Blueprint(__name__, __name__)
 
 
-from models import offers, clusters, generalstats
+from models import offers, clusters, generalstats, regressions
 
 
 """
@@ -230,9 +230,12 @@ async def getgeneralstats():
     return jsonify(v)
 
 # GET GEO POINTS RETURNS -> NAME, GEOCOORDS, ROOMS, SURFACE, TOILETS, PRICE, URL | {CITY, NUMBER OF REGISTERS}}
-@blueprint.route('/getgeopoints/', methods=['POST'])
+@blueprint.route('/getgeopoints/', methods=['GET'])
 async def getgeopoints():
-    return ""
+    query = offers.Offer.objects().limit(1000)
+    o = query.to_json()
+    v = fireservice.make_geopoints(o)
+    return jsonify(v)
 
 # GET LIST OF MOST INFLUENCIAL ATRIBUTES FOR PRICE
 @blueprint.route('/influencialfeats', methods=['GET'])
@@ -261,12 +264,21 @@ async def avgzone():
     query = offers.Offer.objects().limit(1000)
     o = query.to_json()
     v =  fireservice.make_zonemean(o,"price")
+    regressions.Regression(
+        coefs=v["coefs"],
+        rank=v["rank"],
+        singular=v["singular"],
+        intercept=v["intercept"],
+        scores=v["scores"]
+    ).save()
     return jsonify(v)
 
 # GET REGRESSION DATA
-@blueprint.route('/getregression', methods=['GET'])
+@blueprint.route('/getregressions', methods=['GET'])
 async def getreg():
-    return ""
+    query = regressions.Regression.objects()
+    o = query.to_json()
+    return jsonify(o)
 
 
 # RUN REGRESSION ANALYSIS
