@@ -18,7 +18,7 @@
 import React, { Component } from "react";
 import ChartistGraph from "react-chartist";
 import { Grid, Row, Col } from "react-bootstrap";
-
+import axios from 'axios'
 import { Card } from "components/Card/Card.jsx";
 import { StatsCard } from "components/StatsCard/StatsCard.jsx";
 import { Tasks } from "components/Tasks/Tasks.jsx";
@@ -36,6 +36,21 @@ import {
 } from "variables/Variables.jsx";
 
 class Dashboard extends Component {
+
+
+  constructor(props) {
+    super(props);
+    this.state = {
+        cities: [],
+        sites: [],
+        companies: [],
+        count: "",
+        numcompanies: "",
+
+        piechart:{}
+    };
+  }
+
   createLegend(json) {
     var legend = [];
     for (var i = 0; i < json["names"].length; i++) {
@@ -46,7 +61,135 @@ class Dashboard extends Component {
     }
     return legend;
   }
+
+  
+
+  getCities() {
+    axios
+
+        .get(`http://127.0.0.1:5001/cities/`, {})
+        .then(res => {
+            const data = res.data
+            const cities = data.map(u =>
+                <div>
+                <p>{u}</p>
+                
+                </div>
+                )
+
+                this.setState({
+                    cities
+                })
+
+        })
+        .catch((error) => {
+            console.log(error)
+        })
+      }
+
+  getSites() {
+      axios
+
+          .get(`http://127.0.0.1:5001/sites/`, {})
+          .then(res => {
+              const data = res.data
+              const sites = data.map(u =>
+                  <div>
+                  <p>{u}</p>
+                  
+                  </div>
+                  )
+
+                  this.setState({
+                      sites
+                  })
+
+          })
+          .catch((error) => {
+              console.log(error)
+          })
+  }
+
+  getchart1() {
+    axios
+
+        .get(`http://127.0.0.1:5001/companieschart/`, {})
+        .then(res => {
+            const data = res.data
+            var percentages = Object.keys(data).map(val => data[val]);
+            var types = Object.keys(data).map(val =>"info");
+            var percentages_string = Object.keys(data).map(val => data[val]+"%" );
+            var tags = Object.keys(data).map(val => val);
+            var lpdata = {names:tags,types:types}
+            var legendPie = this.createLegend(lpdata);
+            var pc = {
+              dataPie:{
+                labels:percentages_string,
+                series: percentages
+              },
+              legendPie:legendPie
+            };
+            console.log(pc);
+            this.setState({
+              piechart:pc
+          })
+
+        })
+        .catch((error) => {
+            console.log(error)
+        })
+  }
+
+  getCompanies() {
+    axios
+
+        .get(`http://127.0.0.1:5001/companies/`, {})
+        .then(res => {
+            const data = res.data
+            const companies = data.slice(0,10).map(u =>
+                <div>
+                  <ul>
+                    <li>{u}</li>
+                  </ul>
+                </div>
+                )
+
+                this.setState({
+                    companies:companies,
+                    numcompanies: data.length
+                })
+
+        })
+        .catch((error) => {
+            console.log(error)
+        })
+  }
+
+  getCount() {
+    axios
+
+        .get(`http://127.0.0.1:5001/offers/count`, {})
+        .then(res => {
+            const data = res.data
+            this.setState({ count:data})
+
+        })
+        .catch((error) => {
+            console.log(error)
+        })
+  }
+
+  componentDidMount(){
+    this.getchart1()
+    this.getCities()
+    this.getCount()
+    this.getSites()
+    this.getCompanies()
+  }
+  
   render() {
+
+    
     return (
       <div className="content">
         <Grid fluid>
@@ -54,42 +197,42 @@ class Dashboard extends Component {
             <Col lg={3} sm={6}>
               <StatsCard
                 bigIcon={<i className="pe-7s-server text-warning" />}
-                statsText="Capacity"
-                statsValue="105GB"
+                statsText="Data"
+                statsValue= {this.state.count}
                 statsIcon={<i className="fa fa-refresh" />}
-                statsIconText="Updated now"
+                statsIconText="Total amount of offers"
               />
             </Col>
             <Col lg={3} sm={6}>
               <StatsCard
                 bigIcon={<i className="pe-7s-wallet text-success" />}
-                statsText="Revenue"
-                statsValue="$1,345"
+                statsText="Cities"
+                statsValue={this.state.cities}
                 statsIcon={<i className="fa fa-calendar-o" />}
-                statsIconText="Last day"
+                statsIconText="Cities studied"
               />
             </Col>
             <Col lg={3} sm={6}>
               <StatsCard
                 bigIcon={<i className="pe-7s-graph1 text-danger" />}
-                statsText="Errors"
-                statsValue="23"
+                statsText="Sites"
+                statsValue={this.state.sites}
                 statsIcon={<i className="fa fa-clock-o" />}
-                statsIconText="In the last hour"
+                statsIconText="Sites studied"
               />
             </Col>
             <Col lg={3} sm={6}>
               <StatsCard
                 bigIcon={<i className="fa fa-twitter text-info" />}
-                statsText="Followers"
-                statsValue="+45"
+                statsText="Companies"
+                statsValue={this.state.numcompanies}
                 statsIcon={<i className="fa fa-refresh" />}
-                statsIconText="Updated now"
+                statsIconText="Companies detected"
               />
             </Col>
           </Row>
           <Row>
-            <Col md={8}>
+            <Col md={4}>
               <Card
                 statsIcon="fa fa-history"
                 id="chartHours"
@@ -111,7 +254,7 @@ class Dashboard extends Component {
                 }
               />
             </Col>
-            <Col md={4}>
+            <Col md={8}>
               <Card
                 statsIcon="fa fa-clock-o"
                 title="Email Statistics"
@@ -122,11 +265,11 @@ class Dashboard extends Component {
                     id="chartPreferences"
                     className="ct-chart ct-perfect-fourth"
                   >
-                    <ChartistGraph data={dataPie} type="Pie" />
+                    <ChartistGraph data={this.state.piechart.dataPie} type="Pie" />
                   </div>
                 }
                 legend={
-                  <div className="legend">{this.createLegend(legendPie)}</div>
+                  <div className="legend">{this.state.piechart.legendPie}</div>
                 }
               />
             </Col>
@@ -158,17 +301,13 @@ class Dashboard extends Component {
 
             <Col md={6}>
               <Card
-                title="Tasks"
-                category="Backend development"
-                stats="Updated 3 minutes ago"
+                title="Companies studied"
+                category="list of companies"
+                stats="last companies"
                 statsIcon="fa fa-history"
-                content={
-                  <div className="table-full-width">
-                    <table className="table">
-                      <Tasks />
-                    </table>
-                  </div>
-                }
+                content=
+                  {this.state.companies}
+                
               />
             </Col>
           </Row>

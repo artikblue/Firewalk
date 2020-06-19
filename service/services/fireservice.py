@@ -255,6 +255,12 @@ def make_timecount(d, val="month"):
     
     return(valcount.to_json())    
 
+def make_companychart(d):
+    dj = json.loads(d)
+    df = DataFrame(dj)
+    df = DataFrame({'Percentage': df.groupby([ 'company']).size() / len(df)})
+    #return(valcount.to_json())    
+    return df.to_json()
 def make_cheap_zones(d):
     dj = json.loads(d)
     df = DataFrame(dj)

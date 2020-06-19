@@ -4,8 +4,14 @@ from views import fireapi
 from config import settings
 import services.fireservice
 from mongoengine import connect
+from quart_cors import cors, route_cors
+
+
+
 
 app = quart.Quart(__name__)
+app = cors(app)
+
 is_debug = True
 connect("flat_renting")
 

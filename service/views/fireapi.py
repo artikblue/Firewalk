@@ -122,10 +122,19 @@ async def citiescount(c: str):
 async def offerchart(cat :str):
     query = offers.Offer.objects().limit(1000)
     o = query.to_json()
-    v =  fireservice.make_timecount(o,"month")
+    v =  fireservice.make_timecount(o,"day")
     return jsonify(v)
 
-
+# RETURN A LIST {MONTHS, COUNT} OFFERS/MONTH
+@blueprint.route('/companieschart/', methods=['GET'])
+async def companieschart():
+    import json
+    query = offers.Offer.objects().limit(1000)
+    o = query.to_json()
+    v =  fireservice.make_companychart(o)
+    v = json.loads(v)
+    v = v["Percentage"]
+    return v
 # RETURN A LIST SITE:COUNT (SITE, NUMBER---) CATEGORY/UNITS
 @blueprint.route('/sitescount', methods=['GET'])
 async def sitescounterI():
