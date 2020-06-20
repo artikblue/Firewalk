@@ -87,31 +87,52 @@ def encode_target(df, target_column, newcolumn):
 
     return (df_mod, targets)
 
+def classify(d, feats):
+
+    sdt = pickle.loads(d)
+    yp = sdt.predict(feats)
+
+    return yp
+
+    
+
 
 @force_async
-def make_dtree(d,c):
+def make_dtree(d,c, 
+    feats=["num_photos","num_feats","site_num","city_num","zone_num","company_num","surface","rooms","toilets"],
+    criterion="gini", random_state=99, min_samples_split=20, max_depth=4, test_size=0.4):
     data = json.loads(d)
     df = DataFrame(data)
     
     prices_category = make_categories(c)
 
     df['price_label'] = df.apply (lambda row: map_pricelabel(row,prices_category), axis=1)
-    df['num_photos'] = df.apply (lambda row: len(row["images"]), axis=1)
-    df['num_feats'] = df.apply (lambda row: len(row["feats"]), axis=1)
-    df2, sites = encode_target(df, "site", "site_num")
-    df2, cities = encode_target(df2, "city", "city_num")
-    df2, zones = encode_target(df2, "zone", "zone_num")
-    df2, companies = encode_target(df2, "company", "company_num")
+
+    if "num_photos" in feats:
+        df['num_photos'] = df.apply (lambda row: len(row["images"]), axis=1)
+    if "num_feats" in feats:
+        df['num_feats'] = df.apply (lambda row: len(row["feats"]), axis=1)
+
+    df2 = df 
+    if "site_num" in feats:
+        df2, sites = encode_target(df2, "site", "site_num")
+    if "city_num" in feats:
+        df2, cities = encode_target(df2, "city", "city_num")
+    if "zone_num" in feats:
+        df2, zones = encode_target(df2, "zone", "zone_num")
+    if "company_num" in feats:
+        df2, companies = encode_target(df2, "company", "company_num")
+
     df2, labels = encode_target(df2, "price_label", "label_num")
 
     df2=df2.drop(columns=['price','site','city','zone','company','address','url','name','parse_date','price_label','feats','images'])
 
     y = df2["label_num"]
-    X = df2[["num_photos","num_feats","site_num","city_num","zone_num","company_num","surface","rooms","toilets"]]
-    dt = DecisionTreeClassifier(min_samples_split=20, random_state=99, criterion="gini", max_depth=4)
+    X = df2[feats]
+    dt = DecisionTreeClassifier(min_samples_split=min_samples_split, random_state=random_state, criterion=criterion, max_depth=max_depth)
     
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=1) # 60% training and 40% test
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=1) # 60% training and 40% test isok
     dt = dt.fit(X_train,y_train)
     y_pred = dt.predict(X_test)
     scores = cross_val_score(dt, X, y, cv=5)
@@ -119,7 +140,8 @@ def make_dtree(d,c):
     sdt = pickle.dumps(dt)
     tree_obj = {
         'accuracy':metrics.accuracy_score(y_test, y_pred),
-        'crossvalscores':scores.tolist()
+        'crossvalscores':scores.tolist(),
+        'prices_category':prices_category
     }
     return tree_obj,sdt
 

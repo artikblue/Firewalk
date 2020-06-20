@@ -4,7 +4,7 @@ import pickle
 from services import fireservice
 import asyncio
 blueprint = quart.blueprints.Blueprint(__name__, __name__)
-
+import json
 from quart import request
 
 from models import offers, clusters, generalstats, regressions, classifiers
@@ -245,20 +245,57 @@ async def getgeopoints():
     return jsonify(v)
 
 # GENERATE, TRAIN AND EVALUATE A DECISSIONTREE CLASSIFIER FOR OFFERS
-@blueprint.route('/genclassifier', methods=['GET'])
-async def influencialatribs():
+@blueprint.route('/genclassifier', methods=['POST'])
+async def genclassifier():
+    data = await request.form 
     querygeneral = offers.Offer.objects().all()
     queryclusters = clusters.Cluster.objects()
-    v, sdt = await fireservice.make_dtree(querygeneral.to_json(), queryclusters.to_json())
+
+    feats = data.getlist('feats')
+    criterion = data["criterion"]
+    random_state = int(data["random_state"])
+    min_samples_split = int(data["min_samples_split"])
+    max_depth = int(data["max_depth"])
+    test_size = float(data["test_size"])
+
+    v, sdt = await fireservice.make_dtree(querygeneral.to_json(), queryclusters.to_json(), feats=feats, criterion=criterion, 
+                                            random_state=random_state, min_samples_split=min_samples_split, max_depth=max_depth, test_size=test_size)
+    
     classifiers.Classifier(
         classifier_type = "decissiontree",
         object_data = sdt,
         accuracy = v["accuracy"],
-        scores = v["crossvalscores"]
+        scores = v["crossvalscores"],
+        categories = json.dumps(v["prices_category"])
     ).save()
 
     return jsonify(v)
 
+# GET CLASSIFFIERS
+@blueprint.route('/getclassifiers', methods=['GET'])
+async def getclassifiers():
+    query = classifiers.Classifier.objects().first()
+    o = query.to_json()
+    
+    
+    return (o)
+
+# CLASSIFY AN OFFER INTO A PRICE RANGE
+@blueprint.route('/classify', methods=['POST'])
+async def classify():
+    data = await request.form
+    query = classifiers.Classifier.objects().first()
+    feats = data.getlist('feats')
+    feats = [feats]
+    o = query["object_data"]
+
+    v = fireservice.classify(o, feats)
+
+    ret_obj = {
+        "category":v.tolist(),
+        "query":json.loads(query["categories"])
+    }
+    return jsonify(ret_obj)
 # GET CATEGORIES FOR OFFERS
 @blueprint.route('/categories', methods=['GET'])
 async def getcategories():

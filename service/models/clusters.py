@@ -7,3 +7,4 @@ class Cluster(Document):
     clusters = ListField(required=False)
     numpca = IntField(required=False)
     algorithm = StringField(required=False)
+    
