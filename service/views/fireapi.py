@@ -5,6 +5,7 @@ from services import fireservice
 import asyncio
 blueprint = quart.blueprints.Blueprint(__name__, __name__)
 
+from quart import request
 
 from models import offers, clusters, generalstats, regressions, classifiers
 
@@ -135,6 +136,18 @@ async def companieschart():
     v = json.loads(v)
     v = v["Percentage"]
     return v
+
+# RETURN A LIST {MONTHS, COUNT} OFFERS/MONTH
+@blueprint.route('/siteschart/', methods=['GET'])
+async def siteschart():
+    import json
+    query = offers.Offer.objects().limit(5000)
+    o = query.to_json()
+    v =  fireservice.make_sitechart(o)
+    v = json.loads(v)
+    v = v["Percentage"]
+    return v
+
 # RETURN A LIST SITE:COUNT (SITE, NUMBER---) CATEGORY/UNITS
 @blueprint.route('/sitescount', methods=['GET'])
 async def sitescounterI():
@@ -163,25 +176,32 @@ async def getclusters():
     return jsonify(o)
 
 # RUN CLUSTER ANALYSIS WHERE N I S THE NUMBER OF CLUSTER -> RESULT GOES TO RRESULTS DB
-@blueprint.route('/runcluster/<n>', methods=['GET'])
-async def runcluster(n: int):
+@blueprint.route('/runcluster/', methods=['POST'])
+async def runcluster():
+    data = await request.form
+    
     query = offers.Offer.objects.all().limit(1000)
     o = query.to_json()
-    a = await fireservice.make_clusters(o, int(n))
-    for v in a:
-        clusters.Cluster(price=v["price"], surface=v["surface"], rooms=v["rooms"], toilets=v["toilets"], feats=v["feats"], images=v["images"]).save()
-        
-    return jsonify(a)
+    numclusters = data['numclusters']
+    numpca = data['numpca']
+    algorithm = data['algorithm']
+    vals = data.getlist('vals')
+    a = await fireservice.make_clusters(o, numclusters=int(numclusters), numpca=int(numpca), vals=vals, algorithm=algorithm)
+    
+    clusters.Cluster(tags=vals, clusters=a, algorithm=algorithm, numpca=numpca).save()
+    res = {"tags":vals, "clusters":a}
+    return jsonify(res)
 
 # GET GENERAL STATS
 @blueprint.route('/generalstats', methods=['GET'])
 async def getgeneralstats():
-    query = offers.Offer.objects().limit(1000)
+    query = offers.Offer.objects().all()
     o = query.to_json()
     v = await fireservice.make_stats(o)
 
     generalstats.Stats(
             price_mean = v["price_mean"],
+            price_mode = v["price_mode"],
             surface_mean = v["surface_mean"],
             rooms_mean = v["rooms_mean"],
             toilets_mean = v["toilets_mean"],
@@ -227,7 +247,7 @@ async def getgeopoints():
 # GENERATE, TRAIN AND EVALUATE A DECISSIONTREE CLASSIFIER FOR OFFERS
 @blueprint.route('/genclassifier', methods=['GET'])
 async def influencialatribs():
-    querygeneral = offers.Offer.objects().limit(1000)
+    querygeneral = offers.Offer.objects().all()
     queryclusters = clusters.Cluster.objects()
     v, sdt = await fireservice.make_dtree(querygeneral.to_json(), queryclusters.to_json())
     classifiers.Classifier(
@@ -249,15 +269,16 @@ async def getcategories():
 # GET LIST OF CHEAPEST ZONES N IS THE MAX NUMBER, RETURN ZONE , AVG PRICE
 @blueprint.route('/cheapestzones', methods=['GET'])
 async def cheapestzones():
-    query = offers.Offer.objects().limit(1000)
+    query = offers.Offer.objects().all()
     o = query.to_json()
     v =  fireservice.make_cheap_zones(o)
-    return jsonify(v)
+    
+    return (v)
 
 # GET LIST OF MOST EXPENSIVE ZONES N IS THE MAX NUMBER, RETURN ZONE , AVG PRICE
 @blueprint.route('/expensivestzones', methods=['GET'])
 async def expensivestzones():
-    query = offers.Offer.objects().limit(1000)
+    query = offers.Offer.objects().all()
     o = query.to_json()
     v =  fireservice.make_expensive_zones(o)
     return jsonify(v)
@@ -265,7 +286,7 @@ async def expensivestzones():
 # GET LIST OF ZONES / AVERAGE PRICE
 @blueprint.route('/pricezone', methods=['GET'])
 async def avgzone():
-    query = offers.Offer.objects().limit(1000)
+    query = offers.Offer.objects().all()
     o = query.to_json()
     v =  fireservice.make_zonemean(o,"price")
     regressions.Regression(
@@ -286,11 +307,17 @@ async def getreg():
 
 
 # RUN REGRESSION ANALYSIS
-@blueprint.route('/runreg', methods=['GET'])
+@blueprint.route('/runreg', methods=['POST'])
 async def runreg():
+    data = await request.form 
+    val = data["val"]
+    random_state = data["random_state"]
+    n_splits = data["n_splits"]
+    feats = data.getlist('feats')
+
     query = offers.Offer.objects().limit(1000)
     o = query.to_json()
-    v = await fireservice.make_regression(o)
+    v = await fireservice.make_regression(o, val=val, feats=feats, n_splits=n_splits, random_state=random_state)
     return jsonify(v)
 ## BOTS MANAGEMENT
 

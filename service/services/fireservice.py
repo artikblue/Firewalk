@@ -5,6 +5,7 @@ import functools
 import json
 import datetime
 import numpy as np
+from sklearn import decomposition
 from concurrent.futures import ThreadPoolExecutor
 from pandas import DataFrame, DatetimeIndex
 from sklearn import preprocessing
@@ -19,7 +20,7 @@ from sklearn.model_selection import KFold
 import pickle
 import googlemaps
 
-
+from sklearn.preprocessing import StandardScaler
 
 
 def force_async(fn):
@@ -37,21 +38,14 @@ def force_async(fn):
     return wrapper
 
 
-def get_numerical_data(d):
+def get_numerical_data(d, vals=['price','surface','rooms','toilets','feats','images']):
     dj = json.loads(d)
-    cluster_data = []
-    for v in dj:
-        obj = {
-            "price":int(v["price"]),
-            "surface":int(v["surface"]),
-            "rooms":int(v["rooms"]),
-            "toilets":int(v["toilets"]),
-            "feats":len(v["feats"]),
-            "images":len(v["images"])
-        }
-        cluster_data.append(obj)
-
-    df = DataFrame(cluster_data)
+    df = DataFrame(dj)
+    df = df[vals]
+    if "feats" in vals:
+        df["feats"]=df["feats"].apply(lambda x: len(x))
+    if "images" in vals:
+        df["images"]=df["images"].apply(lambda x: len(x))
     return df
 @force_async
 def make_geopoints(d):
@@ -130,11 +124,12 @@ def make_dtree(d,c):
     return tree_obj,sdt
 
 @force_async
-def make_regression(d):  
-    df = get_numerical_data(d)
+def make_regression(d, n_splits=3, random_state=42, val="price",feats=["surface", "rooms", "toilets", "feats", "images"]):
+    feats.append(val)  
+    df = get_numerical_data(d, vals=feats)
     model = LinearRegression()
-    X = DataFrame(df["price"])
-    y = DataFrame(df[["surface", "rooms", "toilets", "feats", "images"]])
+    X = DataFrame(df[val])
+    y = DataFrame(df[feats])
     scores = []
     kfold = KFold(n_splits=3, shuffle=True, random_state=42)
     for i, (train, test) in enumerate(kfold.split(X, y)):
@@ -143,44 +138,46 @@ def make_regression(d):
         scores.append(score)
 
     regression_obj = {
-        "coefs":model.coef_,
+        "coefs":model.coef_.tolist(),
         "rank":model.rank_,
-        "singular":model.singular_,
-        "intercept":model.intercept_,
+        "singular":model.singular_.tolist(),
+        "intercept":model.intercept_.tolist(),
         "scores":scores
     }    
 
     return regression_obj
 
-    #print(scores)
 
 @force_async
-def make_clusters(d, numclusters=6):
+def make_clusters(d, numclusters=6, numpca=3, vals=['price','surface','rooms','toilets','feats','images'], algorithm="elkan"):
+    if numpca >= len(vals):
+        numpca=3
+        numclusters=6
+        vals=['price','surface','rooms','toilets','feats','images']
+        
+
+    scal = StandardScaler()
+    df = get_numerical_data(d, vals=vals)
+    print(df)
+    df = scal.fit_transform(df)
+    pca = decomposition.PCA(n_components=numpca)
+    pca.fit(df)
+    df = pca.transform(df)
+
+    kmeans = KMeans(n_clusters=numclusters, algorithm=algorithm).fit(df)
+    centroids =  scal.inverse_transform(pca.inverse_transform(kmeans.cluster_centers_))
+
     
-    df = get_numerical_data(d)
-
-    kmeans = KMeans(n_clusters=numclusters).fit(df)
-    centroids = kmeans.cluster_centers_
-    list_categories = []
-    for c in centroids:
-
-        obj = {
-            "price":int(c[0]),
-            "surface":int(c[1]),
-            "rooms":int(c[2]),
-            "toilets":int(c[3]),
-            "feats":int(c[4]),
-            "images":int(c[5])
-        }
-        list_categories.append(obj)
-    return list_categories
+    
+    return centroids.tolist()
 
 def make_categories(c):
     clusters = json.loads(c)
     prices = []
     #extract prices
-    for c in clusters:
-        prices.append(c["price"])
+    print(clusters)
+    for c in clusters[0]["clusters"]:
+        prices.append(c[0])
     
     prices.sort()
     prices_category = {}
@@ -204,7 +201,7 @@ def make_categories(c):
             maxval = (actualprice+nv) / 2
             minval = ((actualprice+prev) / 2 )+1
 
-        if count > midval:
+        if count < midval:
             tag = "CHEAP-"+str(count)
         else:
             tag = "EXPENSIVE-"+str(count)
@@ -261,11 +258,22 @@ def make_companychart(d):
     df = DataFrame({'Percentage': df.groupby([ 'company']).size() / len(df)})
     #return(valcount.to_json())    
     return df.to_json()
+
+def make_sitechart(d):
+    dj = json.loads(d)
+    df = DataFrame(dj)
+    print(df.head())
+    df = DataFrame({'Percentage': df.groupby([ 'site']).size() / len(df)})
+    print(df.head())
+    #return(valcount.to_json())    
+    return df.to_json()
+
 def make_cheap_zones(d):
     dj = json.loads(d)
     df = DataFrame(dj)
     price_mean = df["price"].mean()
     dfc = df[df.price < price_mean]
+    dfc = dfc.groupby('zone')['price'].mean()
     return dfc.to_json()
 
 def make_expensive_zones(d):
@@ -273,6 +281,7 @@ def make_expensive_zones(d):
     df = DataFrame(dj)
     price_mean = df["price"].mean()
     dfc = df[df.price > price_mean]
+    dfc = dfc.groupby('zone')['price'].mean()
     return dfc.to_json()
 
 @force_async
@@ -280,6 +289,7 @@ def make_stats(d):
     df = get_numerical_data(d)
 
     price_mean = df["price"].mean()
+    price_mode = df["price"].mode()
     surface_mean = df["surface"].mean()
     rooms_mean = df["rooms"].mean()
     toilets_mean = df["toilets"].mean()
@@ -321,6 +331,7 @@ def make_stats(d):
 
     general_stats_obj = {
         "price_mean":str(price_mean),
+        "price_mode":str(price_mode),
         "surface_mean":str(surface_mean),
         "rooms_mean":str(rooms_mean),
         "toilets_mean":str(toilets_mean),

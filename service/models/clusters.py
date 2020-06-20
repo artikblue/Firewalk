@@ -3,9 +3,7 @@ from mongoengine import *
 
 
 class Cluster(Document):
-    price = IntField(required=True)
-    surface = IntField(required=False)
-    rooms = IntField(required=False)
-    toilets = IntField(required=False)
-    feats = IntField(required=False)
-    images = IntField(required=False)
+    tags = ListField(required=True)
+    clusters = ListField(required=False)
+    numpca = IntField(required=False)
+    algorithm = StringField(required=False)

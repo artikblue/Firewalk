@@ -113,11 +113,19 @@ class Dashboard extends Component {
   getchart1() {
     axios
 
-        .get(`http://127.0.0.1:5001/companieschart/`, {})
+        .get(`http://127.0.0.1:5001/siteschart/`, {})
         .then(res => {
             const data = res.data
             var percentages = Object.keys(data).map(val => data[val]);
-            var types = Object.keys(data).map(val =>"info");
+            var types = Object.keys(data).map(val => {
+              if(val ==='pisoscom'){
+                return "info"
+              }
+              else{
+                return "warning"
+              }
+              }
+              );
             var percentages_string = Object.keys(data).map(val => data[val]+"%" );
             var tags = Object.keys(data).map(val => val);
             var lpdata = {names:tags,types:types}
@@ -232,7 +240,7 @@ class Dashboard extends Component {
             </Col>
           </Row>
           <Row>
-            <Col md={4}>
+            <Col md={8}>
               <Card
                 statsIcon="fa fa-history"
                 id="chartHours"
@@ -254,12 +262,12 @@ class Dashboard extends Component {
                 }
               />
             </Col>
-            <Col md={8}>
+            <Col md={4}>
               <Card
                 statsIcon="fa fa-clock-o"
-                title="Email Statistics"
-                category="Last Campaign Performance"
-                stats="Campaign sent 2 days ago"
+                title="Offers by sites"
+                category="% of offers by sites"
+                stats=""
                 content={
                   <div
                     id="chartPreferences"

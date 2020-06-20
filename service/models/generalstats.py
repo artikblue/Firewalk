@@ -33,3 +33,4 @@ class Stats(Document):
     images_std = StringField(required=True)
     offers_count = StringField(required=True)
     calc_date = StringField(required=True)
+    price_mode = StringField(required=False)
