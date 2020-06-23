@@ -20,8 +20,49 @@ import { Grid, Row, Col, Table } from "react-bootstrap";
 
 import Card from "components/Card/Card.jsx";
 import { thArray, tdArray } from "variables/Variables.jsx";
+import axios from 'axios'
+
+
 
 class TableList extends Component {
+
+
+
+  constructor(props) {
+    super(props);
+    this.state = {
+        stat_tags: [],
+        stat_vals: []
+        
+  
+    };
+  }
+  
+  getStats() {
+    axios
+        .get(`http://127.0.0.1:5001/generalstats`, {})
+        .then(res => {
+            const data = res.data
+            const generalstats = data
+
+            var stat_tags = Object.keys(data).map(val => val);
+            var stat_vals = Object.keys(data).map(val => data[val]);
+            console.log(stat_vals);
+                this.setState({
+                    stat_tags:stat_tags,
+                    stat_vals:stat_vals
+                })
+        })
+        .catch((error) => {
+            console.log(error)
+        })
+      }
+
+
+componentDidMount(){
+        this.getStats();
+        console.log(this.state)
+  }    
   render() {
     return (
       <div className="content">
@@ -29,29 +70,53 @@ class TableList extends Component {
           <Row>
             <Col md={12}>
               <Card
-                title="Striped Table with Hover"
-                category="Here is a subtitle for this table"
+                title="General statistics data"
+                category="descriptive statistics"
                 ctTableFullWidth
                 ctTableResponsive
                 content={
                   <Table striped hover>
                     <thead>
-                      <tr>
-                        {thArray.map((prop, key) => {
+                    <tr>
+                        {this.state.stat_tags.slice(1,5).map((prop, key) => {
                           return <th key={key}>{prop}</th>;
                         })}
                       </tr>
                     </thead>
                     <tbody>
-                      {tdArray.map((prop, key) => {
-                        return (
-                          <tr key={key}>
-                            {prop.map((prop, key) => {
-                              return <td key={key}>{prop}</td>;
-                            })}
-                          </tr>
-                        );
-                      })}
+                    <tr>
+                        {this.state.stat_vals.slice(1,5).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </tbody>
+                  </Table>
+                }
+              />
+            </Col>
+
+         
+            <Col md={12}>
+              <Card
+                title="General statistics data"
+                category="descriptive statistics"
+                ctTableFullWidth
+                ctTableResponsive
+                content={
+                  <Table striped hover>
+                    <thead>
+                    <tr>
+                        {this.state.stat_tags.slice(5,10).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        {this.state.stat_vals.slice(5,10).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
                     </tbody>
                   </Table>
                 }
@@ -60,35 +125,145 @@ class TableList extends Component {
 
             <Col md={12}>
               <Card
-                plain
-                title="Striped Table with Hover"
-                category="Here is a subtitle for this table"
+                title="General statistics data"
+                category="descriptive statistics"
                 ctTableFullWidth
                 ctTableResponsive
                 content={
-                  <Table hover>
+                  <Table striped hover>
                     <thead>
-                      <tr>
-                        {thArray.map((prop, key) => {
+                    <tr>
+                        {this.state.stat_tags.slice(10,15).map((prop, key) => {
                           return <th key={key}>{prop}</th>;
                         })}
                       </tr>
                     </thead>
                     <tbody>
-                      {tdArray.map((prop, key) => {
-                        return (
-                          <tr key={key}>
-                            {prop.map((prop, key) => {
-                              return <td key={key}>{prop}</td>;
-                            })}
-                          </tr>
-                        );
-                      })}
+                    <tr>
+                        {this.state.stat_vals.slice(10,15).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
                     </tbody>
                   </Table>
                 }
               />
             </Col>
+            
+
+
+            <Col md={12}>
+              <Card
+                title="General statistics data"
+                category="descriptive statistics"
+                ctTableFullWidth
+                ctTableResponsive
+                content={
+                  <Table striped hover>
+                    <thead>
+                    <tr>
+                        {this.state.stat_tags.slice(15,20).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        {this.state.stat_vals.slice(15,20).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </tbody>
+                  </Table>
+                }
+              />
+            </Col>
+
+
+
+            <Col md={12}>
+              <Card
+                title="General statistics data"
+                category="descriptive statistics"
+                ctTableFullWidth
+                ctTableResponsive
+                content={
+                  <Table striped hover>
+                    <thead>
+                    <tr>
+                        {this.state.stat_tags.slice(20,25).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        {this.state.stat_vals.slice(20,25).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </tbody>
+                  </Table>
+                }
+              />
+            </Col>
+
+
+            <Col md={12}>
+              <Card
+                title="General statistics data"
+                category="descriptive statistics"
+                ctTableFullWidth
+                ctTableResponsive
+                content={
+                  <Table striped hover>
+                    <thead>
+                    <tr>
+                        {this.state.stat_tags.slice(25,30).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        {this.state.stat_vals.slice(25,30).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </tbody>
+                  </Table>
+                }
+              />
+            </Col>
+
+
+            <Col md={12}>
+              <Card
+                title="General statistics data"
+                category="descriptive statistics"
+                ctTableFullWidth
+                ctTableResponsive
+                content={
+                  <Table striped hover>
+                    <thead>
+                    <tr>
+                        {this.state.stat_tags.slice(30,34).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        {this.state.stat_vals.slice(30,34).map((prop, key) => {
+                          return <th key={key}>{prop}</th>;
+                        })}
+                      </tr>
+                    </tbody>
+                  </Table>
+                }
+              />
+            </Col>
+
           </Row>
         </Grid>
       </div>
