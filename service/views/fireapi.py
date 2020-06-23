@@ -280,6 +280,22 @@ async def getclassifiers():
     
     return (o)
 
+# MAP CATEGORY INTO NUM
+@blueprint.route('/mapvalue', methods=['POST'])
+async def mapvalue():
+    data = await request.form
+    query = offers.Offer.objects().all()
+    o = query.to_json()
+    val = data["val"]
+    category = data["category"]
+
+    num_val = fireservice.map_encode(o, val, category)
+    
+    res_num = {
+        "category_num":num_val
+    }
+    return jsonify(res_num)
+
 # CLASSIFY AN OFFER INTO A PRICE RANGE
 @blueprint.route('/classify', methods=['POST'])
 async def classify():

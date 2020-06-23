@@ -78,6 +78,15 @@ def map_pricelabel(data,labels):
             if price <= int(labels[k]["maxval"]):
                 return(labels[k]["tag"])
 
+def map_encode(d, val, cat):
+    dj = json.loads(d)
+    df = DataFrame(dj)
+
+    targets = df[cat].unique()
+
+    return targets.index(val)
+
+
 def encode_target(df, target_column, newcolumn):
 
     df_mod = df.copy()
